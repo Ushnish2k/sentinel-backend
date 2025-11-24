@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # <--- Essential for Frontend
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from sqlalchemy import text as sql_text
+from sqlalchemy import text as sql_text, func
 from contextlib import asynccontextmanager
 from app.database import get_db, engine, Base
 from app.models import sentiment
@@ -11,25 +11,21 @@ from app.services.generator import generate_data
 # 1. LIFESPAN: Handles startup tasks (Loading the AI)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Load the AI Model into memory
     load_model()
     yield
-    # Shutdown: Clean up resources (if any)
 
 # 2. APP INIT: Create tables & Start App
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Sentinel API", version="1.0.0", lifespan=lifespan)
 
-# --- NEW: ALLOW FRONTEND CONNECTION ---
-# This is known as CORS (Cross-Origin Resource Sharing)
+# --- CORS (Essential for Frontend) ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all connections (Safe for dev, restrict for production)
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-# --------------------------------------
 
 # --- ENDPOINTS ---
 
@@ -50,15 +46,13 @@ def analyze_sentiment(text: str, db: Session = Depends(get_db)):
     """
     Manually input text to be analyzed by the AI.
     """
-    # A. Run AI Analysis
     ai_result = analyze_text(text)
     
-    # B. Save result to Database
     db_entry = sentiment.SentimentResult(
         text=text,
         sentiment=ai_result['label'],
         score=ai_result['score'],
-        source="Manual API Input"
+        source="Manual Input"
     )
     db.add(db_entry)
     db.commit()
@@ -74,12 +68,33 @@ def populate_db(count: int = 5, db: Session = Depends(get_db)):
     num_created = generate_data(db, count)
     return {"status": "success", "message": f"Generated {num_created} AI-analyzed posts."}
 
-# 5. NEW ENDPOINT: Get Recent History (The Frontend needs this!)
 @app.get("/api/v1/history")
 def get_history(db: Session = Depends(get_db)):
     """
-    Fetch the last 10 analyzed posts from the database.
+    Fetch the last 50 analyzed posts (Increased from 10 for better demo)
     """
-    # Query the table, order by newest first, limit to 10
-    history = db.query(sentiment.SentimentResult).order_by(sentiment.SentimentResult.id.desc()).limit(10).all()
+    # UPDATED: Limit increased to 50 so Filtering works better
+    history = db.query(sentiment.SentimentResult).order_by(sentiment.SentimentResult.id.desc()).limit(50).all()
     return history
+
+@app.get("/api/v1/stats")
+def get_stats(db: Session = Depends(get_db)):
+    """
+    Groups data by sentiment and counts them.
+    """
+    results = db.query(
+        sentiment.SentimentResult.sentiment, 
+        func.count(sentiment.SentimentResult.id)
+    ).group_by(sentiment.SentimentResult.sentiment).all()
+    
+    stats = [{"name": row[0], "value": row[1]} for row in results]
+    return stats
+
+@app.delete("/api/v1/clear")
+def clear_history(db: Session = Depends(get_db)):
+    """
+    Wipes all data from the database. Use with caution!
+    """
+    count = db.query(sentiment.SentimentResult).delete()
+    db.commit()
+    return {"status": "success", "message": f"Deleted {count} records."}
