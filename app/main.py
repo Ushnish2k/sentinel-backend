@@ -1,17 +1,20 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from app.database import get_db
 
-# Initialize the app
-app = FastAPI(
-    title="Sentinel API",
-    description="AI-Powered Brand Reputation Monitor",
-    version="1.0.0"
-)
+app = FastAPI(title="Sentinel API", version="1.0.0")
 
-# Health Check Route
 @app.get("/")
 def read_root():
     return {"status": "active", "system": "Sentinel v1"}
 
-@app.get("/api/v1/test")
-def test_route():
-    return {"message": "The API is connected and listening."}
+# This is the test button!
+@app.get("/api/v1/db-test")
+def test_db_connection(db: Session = Depends(get_db)):
+    try:
+        # Run a simple SQL command "SELECT 1" to check connection
+        db.execute(text("SELECT 1"))
+        return {"status": "success", "message": "Database connected successfully!"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
