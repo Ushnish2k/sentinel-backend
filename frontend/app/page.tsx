@@ -8,12 +8,18 @@ import {
 import { 
   Activity, Zap, TrendingUp, Search, Terminal, Download, Play, 
   Server, Cpu, Database, Lock, Globe, BarChart3, RefreshCw,
-  Linkedin, Instagram, Mail, User, MessageSquare, Send
+  Linkedin, Instagram, Mail, User, MessageSquare, Send, Github
 } from "lucide-react";
 
 // --- CONFIGURATION ---
-const USE_MOCK_DATA = true; // Set to FALSE for real backend
-const API_URL = "http://127.0.0.1:8000/api/v1";
+
+// SET THIS TO FALSE FOR PRODUCTION
+// Access env var directly. Next.js replaces this at build time.
+const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK === 'false' ? false : true;
+
+// REPLACE WITH YOUR RENDER BACKEND URL
+// Default to localhost if env var is missing
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 const COLORS = {
   POSITIVE: "#34d399", // Emerald-400
@@ -35,6 +41,7 @@ interface SentimentLog {
 interface StatData {
   name: string;
   value: number;
+  [key: string]: any; // Fix for Recharts type error
 }
 
 export default function SentinelEnterprise() {
@@ -47,7 +54,7 @@ export default function SentinelEnterprise() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [latency, setLatency] = useState(42);
 
-  // --- MOCK DATA GENERATOR ---
+  // --- MOCK DATA GENERATOR (Fallback) ---
   const generateInitialData = (count: number) => {
     const sources = ["SysMon", "Analytics", "Cron", "Auth", "Gateway", "UserFeed"];
     const templates = [
@@ -112,6 +119,12 @@ export default function SentinelEnterprise() {
       setLoading(false);
     } catch (error) {
       console.error("Connection Error:", error);
+      // Fallback to mock data on error so the UI doesn't break for the user
+      if (logs.length === 0) {
+          const mockLogs = generateInitialData(50);
+          setLogs(mockLogs);
+          setStats(generateMockStats(mockLogs));
+      }
       setLoading(false);
     }
   };
@@ -318,6 +331,7 @@ export default function SentinelEnterprise() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+               {/* Subtle gradient blob inside card */}
                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
                
               <h3 className="text-slate-400 text-xs font-bold mb-6 uppercase tracking-widest flex items-center gap-2 relative z-10">
@@ -503,9 +517,9 @@ export default function SentinelEnterprise() {
                     {/* Profile Image */}
                     <div className="relative mb-6">
                         <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-500 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-                             {/* PLACE YOUR IMAGE AS: public/admin-profile.jpeg */}
+                             {/* ENSURE FILE IS NAMED: admin-profile.jpg in public folder */}
                             <img 
-                                src="/admin-profile.jpeg" 
+                                src="/admin-profile.jpg" 
                                 alt="Ushnish Basu Roy" 
                                 className="w-full h-full rounded-full object-cover border-4 border-[#050505]"
                                 onError={(e) => {
@@ -518,7 +532,7 @@ export default function SentinelEnterprise() {
 
                     {/* Info */}
                     <h3 className="text-2xl font-bold text-white mb-1">Ushnish Basu Roy</h3>
-                    <p className="text-indigo-400 font-medium text-sm mb-4">Full Stack Developer</p>
+                    <p className="text-indigo-400 font-medium text-sm mb-4">Full Stack Developer | Cloud Digital Leader</p>
                     
                     <p className="text-slate-400 text-sm leading-relaxed max-w-md mb-6">
                         Full-stack developer with experience in building real-time analytics dashboards, API-driven applications, and scalable backend systems. 
@@ -527,6 +541,9 @@ export default function SentinelEnterprise() {
 
                     {/* Social Links */}
                     <div className="flex gap-4">
+                        <a href="https://github.com/Ushnish2k" target="_blank" rel="noreferrer" className="p-3 bg-white/5 rounded-full hover:bg-slate-800 hover:text-white transition-all text-slate-400 group/icon">
+                            <Github className="w-5 h-5" />
+                        </a>
                         <a href="https://www.linkedin.com/in/ushnishbasuroy/" target="_blank" rel="noreferrer" className="p-3 bg-white/5 rounded-full hover:bg-[#0077b5] hover:text-white transition-all text-slate-400 group/icon">
                             <Linkedin className="w-5 h-5" />
                         </a>
@@ -584,6 +601,7 @@ export default function SentinelEnterprise() {
 function StatCard({ title, value, sub, icon, color }: { title: string, value: string, sub?: string, icon: any, color: string }) {
   return (
     <div className="bg-gradient-to-br from-white/[0.08] to-transparent border border-white/10 p-6 rounded-2xl relative overflow-hidden group hover:border-white/20 transition-all shadow-xl backdrop-blur-xl">
+      {/* THE BLUE SHADE FROM THE SIDES - RESTORED */}
       <div className={`absolute top-0 right-0 w-32 h-32 bg-${color}-500/20 rounded-full blur-[50px] -mr-16 -mt-16 transition-all group-hover:bg-${color}-500/30`} />
       <div className={`absolute bottom-0 left-0 w-24 h-24 bg-${color}-500/10 rounded-full blur-[40px] -ml-12 -mb-12 transition-all`} />
       
