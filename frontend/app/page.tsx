@@ -517,9 +517,9 @@ export default function SentinelEnterprise() {
                     {/* Profile Image */}
                     <div className="relative mb-6">
                         <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-br from-indigo-500 to-purple-500 shadow-[0_0_20px_rgba(99,102,241,0.5)]">
-                             {/* ENSURE FILE IS NAMED: admin-profile.jpg in public folder */}
+                             {/* ENSURE FILE IS NAMED: admin-profile.jpeg in public folder */}
                             <img 
-                                src="/admin-profile.jpg" 
+                                src="/admin-profile.jpeg" 
                                 alt="Ushnish Basu Roy" 
                                 className="w-full h-full rounded-full object-cover border-4 border-[#050505]"
                                 onError={(e) => {
